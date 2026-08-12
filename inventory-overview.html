@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#F2F2F7"/>
+<title>Inventory Overview</title>
+<!--
+  Standalone Inventory Overview (store-facing preview) — iOS/SF Pro styling.
+  Live data from GitHub (JaysonSNL13/mobile-ui-v1) per-store JSON: "inventoryOverview" + "data" (for Product Killed) + meta.asOf.
+  Pick a store up top. For review/comments before the dev build.
+  Store Options: "Warehouse" when the DC has 5+ (warehouseAvailable); otherwise other stores holding >1 (loaded across all stores).
+-->
+<style>
+  :root{ --ink:#0B0B0D; --gray:#8A8A8E; --sep:#E7E7EC; --bg:#F2F2F7;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706;
+    --sf:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:var(--sf);background:var(--bg);color:#15151a}
+  .wrap{max-width:560px;margin:0 auto;min-height:100vh}
+  .topbar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:.5px solid var(--sep)}
+  .hdr{background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 16px 8px}
+  .h-title{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .h-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .storeSel{flex:1;height:38px;border:.5px solid var(--sep);border-radius:10px;padding:0 10px;font-family:inherit;font-size:14px;background:#fff;color:var(--ink);outline:none}
+  .asof{font-size:11.5px;color:var(--gray);font-weight:500;margin-top:6px}
+
+  .pills{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 8px;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{flex:0 0 auto;min-width:78px;background:#fff;border:.5px solid var(--sep);border-radius:13px;padding:10px 14px;text-align:center;cursor:pointer}
+  .pill.on{background:var(--ink);border-color:var(--ink)}
+  .pill .n{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+  .pill .l{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray);margin-top:5px}
+  .pill.on .n,.pill.on .l{color:#fff}
+
+  .filters{display:flex;gap:8px;padding:2px 16px 10px}
+  .filters input,.filters select{height:36px;border:.5px solid var(--sep);border-radius:10px;padding:0 10px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);outline:none}
+  .filters input{flex:1;min-width:0}
+  .filters select{flex:0 0 auto;max-width:150px}
+
+  .cards{padding:0 16px 40px}
+  .pcard{background:#fff;border:.5px solid var(--sep);border-radius:15px;overflow:hidden;margin-bottom:9px}
+  .prow{width:100%;display:flex;align-items:center;padding:11px 14px;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;gap:10px}
+  .pinfo{flex:1;min-width:0}
+  .pname{font-size:14px;font-weight:700;color:var(--ink);line-height:1.25}
+  .psub{font-size:11.5px;color:var(--gray);font-weight:500;margin-top:3px}
+  .tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.03em;margin-left:5px}
+  .tag.oos{background:#fee2e2;color:#b91c1c} .tag.staple{background:#dbeafe;color:#1565c0} .tag.killed{background:#111;color:#fff}
+  .pqty{font-size:18px;font-weight:800;color:var(--ink);text-align:right;flex:0 0 auto;line-height:1}
+  .pqty small{display:block;font-size:9px;font-weight:700;color:var(--gray);margin-top:2px;letter-spacing:.04em}
+  .chev{width:16px;height:16px;color:#c7c7cc;flex:0 0 auto;transition:transform .2s}
+  .pcard.exp .chev{transform:rotate(90deg)}
+  .sizes{display:none}
+  .pcard.exp .sizes{display:block}
+
+  /* redesigned expanded view — one clean block per size */
+  /* at-a-glance size grid */
+  .szwrap{padding:12px 14px;border-top:1px solid var(--sep)}
+  .legend{font-size:10px;color:var(--gray);margin:0 0 10px;display:flex;flex-wrap:wrap;gap:3px 12px}
+  .legend b{color:var(--ink);font-weight:800}
+  .mtxwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--sep);border-radius:11px}
+  .mtx{border-collapse:collapse;width:100%;font-size:12px}
+  .mtx th,.mtx td{padding:5px 7px;text-align:center;border-bottom:1px solid #f0f0f2;white-space:nowrap;min-width:44px}
+  .mtx tbody tr:last-child td{border-bottom:none}
+  .mtx thead th{font-weight:800;color:var(--ink);background:#f4f4f6}
+  .mtx .rl{text-align:left;font-weight:700;color:var(--gray);text-transform:uppercase;font-size:9px;letter-spacing:.02em;position:sticky;left:0;background:#fff;min-width:88px;z-index:1;border-right:1px solid #f0f0f2}
+  .mtx thead .rl{background:#f4f4f6}
+  .mtx td.g{color:#15803d;font-weight:800}
+  .mtx td.z{color:#b9bcc4}
+  .mtx .w{color:var(--green);font-weight:800}
+  .mtx .st2{color:#2563eb;font-weight:800}
+  .empty{color:var(--gray);text-align:center;padding:40px 10px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+  <div class="hdr">
+    <div class="h-title">Inventory Overview</div>
+    <div class="h-row"><select class="storeSel" id="storeSel"><option>Loading stores…</option></select></div>
+    <div class="asof" id="asof">—</div>
+  </div>
+  <div class="pills" id="pills"></div>
+  <div class="filters">
+    <input id="search" type="search" placeholder="Search product or size…"/>
+    <select id="catSel"><option value="all">All Categories</option></select>
+  </div>
+  </div>
+  <div class="cards" id="cards"><div class="empty">Loading…</div></div>
+</div>
+
+<script>
+  var DATA='https://raw.githubusercontent.com/JaysonSNL13/mobile-ui-v1/main/data';
+  var STORES=[], ALL=[], killed={}, asOf='', pill='all', q='', cat='', curStore='';
+  var XSTORE=null;               /* cross-store map: "productName|size" -> [{store,oh}] with oh>1 */
+  cat='all';
+  function el(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+  function slug(n){return n.replace(/[^a-zA-Z0-9]/g,'-');}
+  /* short store code: strip POS / State and Liberty, then initials (multi-word) or first 3 letters */
+  function abbr(name){
+    var n=String(name||'').replace(/\b(POS|State\s*and\s*Liberty|Stateand\s*Liberty|Store)\b/gi,'').replace(/\s+/g,' ').trim();
+    if(!n) n=String(name||'');
+    if(n.length>12) n=n.split(' ')[0];   /* too long → use the first word */
+    return n.slice(0,12);
+  }
+  function shortDate(s){
+    if(!s) return '—';
+    var d=new Date(s);
+    if(!isNaN(d.getTime())) return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(-2);
+    var m=String(s).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    return m ? (parseInt(m[1],10)+'/'+parseInt(m[2],10)+'/'+m[3].slice(-2)) : String(s);
+  }
+
+  fetch(DATA+'/index.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    STORES=(j&&j.stores)||[];
+    if(!STORES.length){ el('storeSel').innerHTML='<option>No stores</option>'; return; }
+    el('storeSel').innerHTML=STORES.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join('');
+    var pre=new URLSearchParams(location.search).get('store');
+    if(pre && STORES.indexOf(pre)>=0) el('storeSel').value=pre;
+    loadStore(el('storeSel').value);
+  }).catch(function(){ el('storeSel').innerHTML='<option>Could not load stores</option>'; el('cards').innerHTML='<div class="empty">Could not reach server.</div>'; });
+
+  el('storeSel').addEventListener('change',function(){ loadStore(this.value); });
+
+  function loadStore(name){
+    if(!name)return; curStore=name;
+    el('cards').innerHTML='<div class="empty">Loading '+esc(name)+'…</div>';
+    fetch(DATA+'/'+slug(name)+'.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      ALL=(d&&d.inventoryOverview)||[];
+      asOf=(d&&d.meta&&d.meta.asOf)||'';
+      /* Product Killed set from the purge classification in the same file */
+      killed={}; ((d&&d.data)||[]).forEach(function(r){ if(String(r['Reason']||'')==='Product Killed') killed[r['Parent Name']]=true; });
+      el('asof').textContent=asOf?('As of '+asOf):'';
+      buildCat(); renderPills(); render();
+      loadAllStores();   /* fill Store Options in the background */
+    }).catch(function(){ el('cards').innerHTML='<div class="empty">Could not load inventory for '+esc(name)+'.</div>'; });
+  }
+
+  /* Load every store once to compute Store Options (other stores holding >1). */
+  function loadAllStores(){
+    if(XSTORE) { render(); return; }
+    Promise.all(STORES.map(function(name){
+      return fetch(DATA+'/'+slug(name)+'.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
+        .then(function(d){return {name:name, inv:(d&&d.inventoryOverview)||[]};}).catch(function(){return {name:name, inv:[]};});
+    })).then(function(res){
+      XSTORE={};
+      res.forEach(function(rs){ rs.inv.forEach(function(p){ (p.sizes||[]).forEach(function(z){
+        if((z.oh||0)>=2){ var k=(p.productName||'')+'|'+(z.size||''); (XSTORE[k]=XSTORE[k]||[]).push({store:rs.name, oh:z.oh||0, sales:z.l30||0}); }
+      }); }); });
+      render();
+    });
+  }
+
+  function hasOptimal(p){ return Array.isArray(p.sizes) && p.sizes.some(function(z){return (z.optimalStock||0)>0;}); }
+  /* OOS only when the store is SUPPOSED to carry it (has optimal) but has 0 on hand. No optimal → not OOS. */
+  function isOos(p){ return ((p.summary&&p.summary.totalOH)||0)===0 && hasOptimal(p); }
+
+  /* Product Killed = (a) the purge engine already tagged it "Product Killed" (has stock to purge), OR
+     (b) proposed/expanded rule: 0 on hand everywhere, nothing on order, and the DC can only cover
+     fewer than half the sizes (warehouse 5+ on <50% of sizes) → discontinued, stop replenishing. Staples excluded. */
+  function isKilled(p){
+    if(killed[p.productName]) return true;
+    if(p.isStaple) return false;
+    if(((p.summary&&p.summary.totalOH)||0)!==0) return false;
+    var sizes=p.sizes||[]; if(!sizes.length) return false;
+    if(sizes.some(function(z){return z.onOrder;})) return false;
+    var whse=sizes.filter(function(z){return z.warehouseAvailable;}).length;
+    return whse < sizes.length*0.5;
+  }
+
+  function shortMonth(s){return String(s).replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi,function(m){return m.slice(0,3);});}
+  function fmtEta(raw){
+    if(!raw)return'';var s=String(raw).trim();if(!s||s==='0'||parseFloat(s)===0)return'';
+    if(/^(Early|Mid|End)/i.test(s))return shortMonth(s);var dt=new Date(s);if(isNaN(dt.getTime()))return shortMonth(s);
+    var diff=Math.round((dt-new Date())/86400000);if(diff<0)return'In WH';
+    var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var day=dt.getDate(),m=mn[dt.getMonth()];
+    if(day<=10)return'Early '+m;if(day<=20)return'Mid '+m;return'End '+m;
+  }
+  function srcLine(p,z){
+    var parts=[];
+    if(z.warehouseAvailable) parts.push('<b>&#10003; Available at warehouse</b>');
+    if(XSTORE){
+      var arr=(XSTORE[(p.productName||'')+'|'+(z.size||'')]||[]).filter(function(x){return x.store!==curStore;}).sort(function(a,b){return b.oh-a.oh;});
+      if(arr.length) parts.push('Also at: '+arr.slice(0,4).map(function(x){return x.store+' ('+x.oh+')';}).join(', '));
+    } else if(!z.warehouseAvailable){ parts.push('<span style="opacity:.6">checking stores…</span>'); }
+    return parts.join(' &middot; ');
+  }
+
+  function buildCat(){
+    var cats=[];ALL.forEach(function(p){if(p.productType&&cats.indexOf(p.productType)<0)cats.push(p.productType);});cats.sort();
+    el('catSel').innerHTML='<option value="all">All Categories</option>'+cats.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('');
+  }
+  function renderPills(){
+    var oh=0,tr=0,oos=0,kl=0;
+    ALL.forEach(function(p){oh+=(p.summary&&p.summary.totalOH)||0;tr+=(p.summary&&p.summary.totalInTransit)||0;if(isOos(p))oos++;if(isKilled(p))kl++;});
+    el('pills').innerHTML=
+      pillEl('all','Active Products',ALL.length-kl)+
+      pillEl('oh','On Hand',oh.toLocaleString())+
+      pillEl('transit','In Transit',tr.toLocaleString())+
+      pillEl('oos','Out of Stock',oos,true)+
+      pillEl('killed','Product Killed',kl);
+    Array.prototype.forEach.call(el('pills').children,function(c){c.onclick=function(){ pill=(pill===c.dataset.f&&c.dataset.f!=='all')?'all':c.dataset.f; renderPills(); render(); };});
+  }
+  function pillEl(f,label,n,red){ return '<div class="pill'+(pill===f?' on':'')+(red?' red':'')+'" data-f="'+f+'"><div class="n">'+n+'</div><div class="l">'+label+'</div></div>'; }
+
+  el('search').addEventListener('input',function(){q=this.value.toLowerCase().trim();render();});
+  el('catSel').addEventListener('change',function(){cat=this.value;render();});
+
+  function render(){
+    var list=ALL.filter(function(p){
+      if(pill!=='killed'&&isKilled(p))return false;   /* killed shown only under the Product Killed tab */
+      if(cat!=='all'&&p.productType!==cat)return false;
+      if(q){var hay=(p.productName+' '+p.productType+' '+(p.sizes||[]).map(function(z){return z.size||'';}).join(' ')).toLowerCase();if(hay.indexOf(q)<0)return false;}
+      if(pill==='oos'&&!isOos(p))return false;
+      if(pill==='killed'&&!isKilled(p))return false;
+      if(pill==='transit'&&!((p.summary&&p.summary.totalInTransit)||0))return false;
+      if(pill==='oh'&&!((p.summary&&p.summary.totalOH)||0))return false;
+      return true;
+    });
+    if(!list.length){ el('cards').innerHTML='<div class="empty">No products match.</div>'; return; }
+    window._invList=list;
+    var h='';
+    list.forEach(function(p,pi){
+      var s=p.summary||{};
+      var sub='<span style="color:var(--gray);font-weight:700">'+esc(s.sizesOnHand||'—')+'</span> sizes in stock';   /* grey, not colored */
+      if(isOos(p))sub+='<span class="tag oos">OOS</span>';
+      if(isKilled(p))sub+='<span class="tag killed">Killed</span>';
+      if(p.isStaple)sub+='<span class="tag staple">Staple</span>';
+      var expanded='<div class="szwrap">'+matrix(p)+'</div>';
+      h+='<div class="pcard"><button class="prow" onclick="this.parentNode.classList.toggle(\'exp\')">'+
+        '<div class="pinfo"><div class="pname">'+esc(p.productName||'')+'</div><div class="psub">'+sub+'</div></div>'+
+        '<div class="pqty">'+(s.totalOH||0)+'<small>UNITS</small></div>'+
+        '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'+
+        '</button><div class="sizes">'+expanded+'</div></div>';
+    });
+    el('cards').innerHTML=h;
+  }
+  /* transposed size-run matrix: metrics down the side, one column per size */
+  function matrix(p){
+    var sizes=p.sizes||[];
+    var head='<tr><th class="rl"></th>'+sizes.map(function(z){return '<th>'+esc(String(z.size||''))+'</th>';}).join('')+'</tr>';
+    function row(label,fn,cls){ return '<tr><td class="rl">'+label+'</td>'+sizes.map(function(z){var c=cls?cls(z):'';return '<td'+(c?' class="'+c+'"':'')+'>'+fn(z)+'</td>';}).join('')+'</tr>'; }
+    var body=''+
+      row('OH', function(z){return z.oh||0;}, function(z){return (z.oh||0)>0?'g':'z';})+
+      row('In transit', function(z){return z.inTransit||0;})+
+      row('Threshold', function(z){return z.optimalStock||0;})+
+      row('L30 sales', function(z){return z.l30||0;})+
+      row('Avg/wk', function(z){var a=z.avgWeeklySales||0;return a%1===0?a:a.toFixed(1);})+
+      row('On order', function(z){return z.onOrder?'Yes':'No';})+
+      row('ETA', function(z){return fmtEta(z.eta)||'—';})+
+      row('Last restock', function(z){return esc(z.lastRestockDate?shortDate(z.lastRestockDate):'—');})+
+      row('Available at', function(z){return availCell(z,p);});
+    return '<div class="mtxwrap"><table class="mtx"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+  }
+  function availCell(z,p){
+    if(z.warehouseAvailable) return 'Whse';
+    if(!XSTORE) return '…';
+    /* other stores holding 2+, pick the single best donor: lowest sales, then highest inventory */
+    var arr=(XSTORE[(p.productName||'')+'|'+(z.size||'')]||[]).filter(function(x){return x.store!==curStore && x.oh>=2;});
+    if(!arr.length) return '—';
+    arr.sort(function(a,b){ if((a.sales||0)!==(b.sales||0)) return (a.sales||0)-(b.sales||0); return b.oh-a.oh; });
+    return esc(abbr(arr[0].store));
+  }
+</script>
+</body>
+</html>
