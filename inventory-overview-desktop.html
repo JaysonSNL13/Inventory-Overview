@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventory Overview — State and Liberty</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Gotham font stack — uses Montserrat as closest free alternative */
+  @font-face { font-family: "Gotham"; src: local("Gotham"), local("Gotham-Book"); }
+</style>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #ffffff;
+  --surface: #ffffff;
+  --sur2:    #f5f5f5;
+  --border:  #e0e0e0;
+  --accent:  #1a1d26;
+  --green:   #1a1d26;
+  --text:    #1a1d26;
+  --muted:   #666666;
+  --blue:    #1a1d26;
+  --orange:  #1a1d26;
+  --red:     #1a1d26;
+  --purple:  #1a1d26;
+  --ls:      0.35em;
+}
+html { font-size: 13px; }
+* { letter-spacing: 0.035em; }
+body { font-family: 'Gotham', 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ══════════════════════════════════════════════
+   LOGIN SCREEN
+══════════════════════════════════════════════ */
+#login-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .4s ease;
+}
+#login-screen.hidden { opacity: 0; pointer-events: none; }
+
+.login-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  padding: 48px 44px 40px;
+  width: 100%;
+  max-width: 420px;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+
+.login-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.6rem;
+  letter-spacing: 4px;
+  color: #1a1d26;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+.login-logo span { color: #999999; margin: 0 8px; }
+
+.login-brand {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #9ca3af;
+  margin-bottom: 36px;
+}
+
+.login-divider {
+  width: 100%;
+  height: 1px;
+  background: #e0e0e0;
+  margin-bottom: 28px;
+}
+
+.login-field {
+  width: 100%;
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 16px;
+}
+.login-field label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #6b7280;
+}
+.login-field input,
+.login-field select {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 9px;
+  padding: 12px 14px;
+  font-size: .95rem;
+  font-family: 'Gotham', 'Montserrat', sans-serif;
+  color: #1a1d26;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.login-field select { cursor: pointer; appearance: auto; }
+.login-field input:focus,
+.login-field select:focus {
+  border-color: #1a1d26;
+  box-shadow: 0 0 0 3px rgba(0,0,0,.08);
+  background: #fff;
+}
+.login-field input::placeholder { color: #b0b5bf; }
+
+.login-error {
+  width: 100%;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: .82rem;
+  color: #1a1d26;
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: none;
+}
+.login-error.visible { display: block; }
+
+.login-btn {
+  width: 100%;
+  background: #1a1d26;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 3px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background .15s, transform .1s;
+}
+.login-btn:hover  { background: #333333; }
+.login-btn:active { transform: scale(.98); }
+.login-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.login-footer {
+  margin-top: 22px;
+  font-size: .72rem;
+  color: #b0b5bf;
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════════════ */
+.top-bar {
+  background: #ffffff; border-bottom: 1px solid #e0e0e0;
+  padding: 0 24px; display: flex; align-items: center;
+  justify-content: space-between; height: 64px;
+  position: sticky; top: 0; z-index: 200; gap: 14px;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+  letter-spacing: 3px; color: #1a1d26; white-space: nowrap;
+}
+.logo span { color: var(--text); opacity: .4; margin: 0 7px; }
+
+/* store selector */
+.store-wrap { display: flex; align-items: center; gap: 10px; }
+.store-label { font-size: .75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); white-space: nowrap; font-weight: 600; }
+.store-select {
+  background: var(--sur2); border: 2px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 10px 18px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem;
+  letter-spacing: 2px; outline: none; cursor: pointer;
+  min-width: 260px; transition: border-color .15s;
+}
+.store-select:focus { border-color: var(--text); }
+.store-select option { background: var(--sur2); font-size: .9rem; color: var(--text); font-family: 'Gotham', 'Montserrat', sans-serif; }
+.store-select:disabled { opacity: .85; cursor: default; border-color: var(--muted); }
+
+/* active store label (minimal header, read-only) */
+.active-store-label {
+  background: var(--sur2); border: 2px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 8px 18px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem;
+  letter-spacing: 2px; white-space: nowrap;
+}
+
+/* user chip + logout */
+.user-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--sur2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 12px 5px 8px;
+}
+.user-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #1a1d26; color: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: .85rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.user-name { font-size: .78rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+
+.top-right { display: flex; align-items: center; gap: 8px; }
+.chip { font-family: 'Gotham', 'Montserrat', monospace; font-size: .72rem; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--sur2); color: var(--muted); white-space: nowrap; }
+.chip strong { color: var(--text); }
+.btn-sm { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 6px 12px; font-size: .8rem; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: 'Gotham', 'Montserrat', sans-serif; }
+.btn-sm:hover { border-color: var(--text); color: var(--text); }
+.btn-logout { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 6px 12px; font-size: .8rem; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: 'Gotham', 'Montserrat', sans-serif; }
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+.btn-export { display: flex; align-items: center; gap: 5px; background: var(--sur2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 6px 12px; font-size: .8rem; cursor: pointer; transition: all .15s; font-family: 'Gotham', 'Montserrat', sans-serif; }
+.btn-export:hover { border-color: var(--text); color: var(--text); }
+
+/* ══════════════════════════════════════════════
+   SUMMARY BAR
+══════════════════════════════════════════════ */
+.summary-bar { background: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 12px 24px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; }
+.stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; line-height: 1; }
+.v-yellow { color: var(--text); }
+.v-white  { color: var(--text); }
+.v-red    { color: var(--text); }
+.stat-label { font-size: .68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-top: 3px; font-weight: 600; }
+.stat-sub { font-size: .88rem; font-weight: 700; color: var(--text); }
+.stat-sub.mono { color: var(--text); }
+.stat-div { width: 1px; height: 38px; background: var(--border); }
+.search-right { margin-left: auto; position: relative; }
+.search-right svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search-input { background: var(--sur2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 14px 7px 34px; font-size: .88rem; font-family: 'Gotham', 'Montserrat', sans-serif; outline: none; width: 230px; transition: border-color .15s; }
+.search-input:focus { border-color: var(--text); }
+.search-input::placeholder { color: var(--muted); }
+
+/* ══════════════════════════════════════════════
+   TABLE
+══════════════════════════════════════════════ */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.table-outer { overflow: auto; max-height: calc(100vh - 270px); }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+td.frozen-col, th.frozen-col {
+  position: sticky;
+  background: #ffffff;
+  z-index: 2;
+}
+th.frozen-col { z-index: 3; background: #ffffff; }
+td.frozen-col-1, th.frozen-col-1 { left: 0; min-width: 60px; }
+td.frozen-col-2, th.frozen-col-2 { left: 60px; min-width: 280px; }
+thead { position: sticky; top: 0; z-index: 10; }
+
+thead tr.group-row th { background: #f5f5f5; font-family: 'Gotham', 'Montserrat', monospace; font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; padding: 5px 6px; border-bottom: 1px solid var(--border); font-weight: 800; color: var(--muted); }
+thead tr.group-row th.g-store { color: #fff; background: #1a1d26; border-top: 3px solid #1a1d26; }
+thead tr.group-row th.g-wh    { color: #fff; background: #1a1d26; border-top: 3px solid #1a1d26; }
+thead tr.group-row th.g-sales { color: #fff; background: #1a1d26; border-top: 3px solid #1a1d26; }
+thead tr.group-row th.g-purge { color: #fff; background: #1a1d26; border-top: 3px solid #1a1d26; border-right: 1px solid #333; }
+
+thead tr.col-row th { background: #ffffff; color: var(--text); font-weight: 700; font-size: .88rem; padding: 10px 14px; text-align: left; white-space: nowrap; border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; letter-spacing: .2px; }
+thead tr.col-row th:hover { color: var(--text); }
+thead tr.col-row th.sorted { color: var(--text); }
+thead tr.col-row th.r { text-align: right; }
+thead tr.col-row th.c { text-align: center; }
+.sort-icon { margin-left: 3px; opacity: .4; font-size: .68rem; }
+.sorted .sort-icon { opacity: 1; }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:nth-child(even) { background: #ffffff; }
+tbody tr:nth-child(odd)  { background: #ffffff; }
+tbody tr:hover { background: #f5f5f5; }
+tbody tr.sibling-row { background: #ffffff; opacity: .85; }
+tbody tr.sibling-row:hover { background: #f5f5f5; opacity: 1; }
+tbody tr.parent-divider td { padding: 0; height: 2px; background: #e0e0e0; border: none; border-top: 2px solid #e0e0e0; }
+td { padding: 8px 10px; vertical-align: middle; white-space: nowrap; font-size: .88rem; }
+td.r { text-align: right; font-family: 'Gotham', 'Montserrat', monospace; font-size: .88rem; }
+td.c { text-align: center; }
+td.col-name { font-size: .88rem; font-weight: 700; color: var(--text); white-space: normal; line-height: 1.35; width: 360px; min-width: 280px; max-width: 400px; word-break: break-word; vertical-align: middle; }
+td.col-type { font-size: .82rem; color: var(--muted); font-weight: 500; white-space: normal; word-break: break-word; vertical-align: middle; line-height: 1.2; }
+td.col-size { font-family: 'Gotham', 'Montserrat', monospace; font-size: .88rem; font-weight: 700; vertical-align: middle; }
+td.col-num  { font-family: 'Gotham', 'Montserrat', monospace; font-size: .88rem; font-weight: 600; vertical-align: middle; }
+.name-size-tag { display: inline-block; margin-left: 8px; font-size: .75rem; font-weight: 700; font-family: 'Gotham', 'Montserrat', monospace; background: var(--sur2); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; vertical-align: middle; }
+
+.center-msg { text-align: center; padding: 70px 20px; color: var(--muted); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 3px; }
+
+/* ══════════════════════════════════════════════
+   INVENTORY OVERVIEW TAB
+   — matches Purge desktop layout (sticky headers, frozen cols, monochrome)
+══════════════════════════════════════════════ */
+.inv-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.inv-table thead { position: sticky; top: 0; z-index: 10; }
+.inv-table thead tr.group-row th {
+  background: #1a1d26; color: #fff;
+  font-family: 'Gotham', 'Montserrat', monospace;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px;
+  text-align: center; padding: 5px 6px;
+  border-top: 3px solid #1a1d26; border-right: 1px solid #333;
+  font-weight: 800;
+}
+.inv-table thead tr.col-row th {
+  background: #ffffff; color: var(--text);
+  font-weight: 700; font-size: .78rem;
+  padding: 8px 6px; text-align: center;
+  white-space: normal; line-height: 1.2;
+  max-width: 90px;
+  border-bottom: 2px solid var(--border);
+  letter-spacing: .2px;
+}
+.inv-table thead tr.col-row th.l { text-align: left; max-width: none; }
+/* Frozen Parent Name column shouldn't be constrained */
+.inv-table thead tr.col-row th.frozen-col-2 { max-width: none; }
+/* Sortable column headers */
+.inv-table th.inv-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s ease;
+}
+.inv-table th.inv-sortable:hover { background: #f0f0f0; }
+.inv-table th.inv-sortable:hover .inv-sort-arrow-idle { color: #999; }
+.inv-table .inv-sort-arrow {
+  font-size: .75rem;
+  margin-left: 4px;
+  vertical-align: baseline;
+  font-weight: 400;
+}
+/* Faint when column is not the active sort */
+.inv-table .inv-sort-arrow-idle   { color: #c4c4c4; }
+/* Bold when column IS the active sort */
+.inv-table .inv-sort-arrow-active { color: #1a1d26; font-weight: 700; }
+/* Vertical separators between Store / Warehouse / Sales groups */
+.inv-table th.group-sep, .inv-table td.group-sep { border-right: 1px solid #e5e7eb; }
+.inv-table tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
+.inv-table tbody tr:hover { background: #f5f5f5; }
+.inv-table tbody tr.inv-size-row { background: #fafafa; cursor: default; }
+.inv-table tbody tr.inv-size-row:hover { background: #f0f0f0; }
+.inv-table tbody tr.inv-size-row td { padding: 4px 10px; font-size: .78rem; }
+.inv-table td { padding: 8px 10px; vertical-align: middle; white-space: nowrap; font-size: .85rem; }
+.inv-table td.c { text-align: center; font-family: 'Gotham', 'Montserrat', monospace; font-weight: 600; }
+.inv-table td.l { text-align: left; }
+/* Sizes Available cell — let multi-size lists wrap (e.g. "S, M, L, XL, XXL") */
+.inv-table td.inv-sizes-cell { white-space: normal; line-height: 1.3; max-width: 120px; }
+.inv-table td.col-name { font-weight: 700; color: var(--text); white-space: normal; line-height: 1.35; min-width: 280px; max-width: 360px; word-break: break-word; }
+.inv-table td.col-type { font-size: .78rem; color: var(--muted); font-weight: 500; white-space: normal; }
+.inv-table td.frozen-col, .inv-table th.frozen-col {
+  position: sticky; background: #ffffff; z-index: 2;
+}
+.inv-table th.frozen-col { z-index: 11; background: #ffffff; }
+.inv-table td.frozen-col-1, .inv-table th.frozen-col-1 { left: 0; min-width: 60px; }
+.inv-table td.frozen-col-2, .inv-table th.frozen-col-2 { left: 60px; min-width: 280px; }
+.inv-table .inv-chev {
+  display: inline-block; width: 14px; transition: transform .2s;
+  color: var(--muted); font-weight: 700; margin-right: 6px;
+}
+.inv-table tr.expanded .inv-chev { transform: rotate(90deg); }
+.inv-table .inv-cell-bad  { color: #1a1d26; font-weight: 800; background: #fee2e2; border-radius: 4px; padding: 2px 6px; display: inline-block; min-width: 28px; }
+.inv-table .inv-cell-good { color: #1a1d26; font-weight: 800; background: #d1fae5; border-radius: 4px; padding: 2px 6px; display: inline-block; min-width: 28px; }
+.inv-table .inv-cell-low  { color: #1a1d26; font-weight: 800; background: #fed7aa; border-radius: 4px; padding: 2px 6px; display: inline-block; min-width: 28px; }
+.inv-table .inv-cell-zero { color: var(--muted); }
+/* Sizes Available text coloring — quick scan of size-run health.
+   Green = full run (100%). Red = under 50% OR 2 of 3 middle sizes gone.
+   Anything else inherits the default body color (black-ish). */
+.inv-table .inv-sizes-ok      { color: #047857; font-weight: 700; }
+.inv-table .inv-sizes-broken  { color: #b91c1c; font-weight: 700; }
+/* ══════════════════════════════════════════════
+   NEW INVENTORY FILTER UI
+   Filter button + dropdown panel + Search + NBR + Print
+   Layout: full-width toolbar above the summary bar.
+══════════════════════════════════════════════ */
+.inv-toolbar {
+  position: relative;  /* anchor for the absolute-positioned dropdown panel */
+  background: #ffffff;
+  border-bottom: 1px solid var(--border, #e0e0e0);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.inv-toolbar-left  { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; }
+.inv-toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+/* Filter button — outline style, with optional count badge */
+.inv-filter-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .85rem; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.inv-filter-btn:hover { background: #f5f5f5; }
+.inv-filter-btn.is-active { background: #1a1d26; color: #fff; border-color: #1a1d26; }
+.inv-filter-btn.is-disabled { opacity: .4; pointer-events: none; }
+.inv-filter-btn .inv-chev-down { margin-left: 2px; }
+.inv-filter-count {
+  background: #1a1d26; color: #fff;
+  border-radius: 9px; padding: 1px 7px;
+  font-size: .65rem; font-weight: 700;
+  margin-left: 2px; min-width: 16px; text-align: center;
+}
+.inv-filter-btn.is-active .inv-filter-count { background: #fff; color: #1a1d26; }
+
+/* Search input — refreshed to match the new toolbar */
+.inv-search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  border-radius: 8px;
+  padding: 6px 10px;
+  flex: 0 1 320px;
+  color: var(--muted);
+}
+.inv-search-wrap input.search-input {
+  border: none; outline: none; background: transparent;
+  flex: 1 1 auto; min-width: 0;
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .85rem; color: var(--text);
+}
+.inv-search-wrap input.search-input::placeholder { color: var(--muted); }
+
+/* NBR toggle button — special right-side alert button */
+.inv-nbr-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .85rem; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.inv-nbr-btn:hover { background: #fef2f2; border-color: #fecaca; }
+.inv-nbr-btn.is-active { background: #1a1d26; color: #fff; border-color: #1a1d26; }
+.inv-nbr-btn svg { color: #b91c1c; }
+.inv-nbr-btn.is-active svg { color: #fca5a5; }
+/* Red count badge — always visible (passive alert even when off) */
+.inv-nbr-badge {
+  background: #dc2626; color: #fff;
+  border-radius: 9px; padding: 1px 8px;
+  font-size: .68rem; font-weight: 800;
+  min-width: 18px; text-align: center;
+}
+.inv-nbr-badge.is-zero { background: #d4d4d4; }
+.inv-nbr-btn.is-active .inv-nbr-badge { background: #fff; color: #dc2626; }
+
+/* Print button — matches the toolbar look */
+.inv-print-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .85rem; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.inv-print-btn:hover { background: #f5f5f5; }
+
+/* ── Filter dropdown panel ────────────────────────── */
+.inv-filter-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 24px;
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  padding: 16px 20px;
+  min-width: 680px;
+  max-width: 880px;
+}
+.inv-filter-panel-cols {
+  display: grid;
+  grid-template-columns: 1fr 1.7fr 1fr;   /* Category column wider — holds two sub-columns */
+  gap: 24px;
+  padding-bottom: 14px;
+}
+.inv-filter-group-title {
+  font-size: .7rem; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.inv-filter-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+  font-size: .85rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.inv-filter-row:hover { color: #000; }
+.inv-filter-row input { accent-color: #1a1d26; cursor: pointer; }
+/* Sticky "All products" row sits above the group's options, slightly bolder */
+.inv-filter-row-sticky {
+  font-weight: 600;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+/* Category list — two columns so long category lists stay compact and readable.
+   The "All categories" radio stays in a single row above (rendered separately
+   in invBuildCategoryFilter), and the rest of the categories flow across two
+   columns. CSS columns is the cleanest approach — preserves vertical alignment
+   and keeps the existing label markup. */
+.inv-filter-cat-cols {
+  column-count: 2;
+  column-gap: 24px;
+  /* prevent a label from breaking across columns */
+}
+.inv-filter-cat-cols .inv-filter-row {
+  break-inside: avoid;       /* keep each label intact within its column */
+  -webkit-column-break-inside: avoid;
+}
+.inv-filter-panel-foot {
+  border-top: 1px solid var(--border, #e5e7eb);
+  padding-top: 12px;
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.inv-filter-clear, .inv-filter-apply {
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .82rem; font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.inv-filter-clear {
+  background: #ffffff;
+  border: 1px solid var(--border, #d4d4d4);
+  color: var(--text);
+}
+.inv-filter-clear:hover { background: #f5f5f5; }
+.inv-filter-apply {
+  background: #1a1d26;
+  border: 1px solid #1a1d26;
+  color: #ffffff;
+}
+.inv-filter-apply:hover { background: #000; }
+
+/* NBR banner shown above the table when NBR mode is on */
+.inv-nbr-banner {
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #1a1d26;
+  padding: 8px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .85rem;
+}
+.inv-nbr-banner span { font-weight: 600; }
+.inv-nbr-back {
+  background: transparent;
+  border: 1px solid #1a1d26;
+  color: #1a1d26;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-family: 'Gotham','Montserrat',sans-serif;
+  font-size: .8rem; font-weight: 600;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.inv-nbr-back:hover { background: #1a1d26; color: #fff; }
+
+/* "Not Being Replenished" stat in the summary bar shows red when > 0 */
+.inv-stat-nbr.has-issues { color: #dc2626; }
+
+/* When the filter panel is disabled (NBR active), gray it out */
+.inv-toolbar.is-nbr-mode .inv-filter-btn,
+.inv-toolbar.is-nbr-mode .inv-search-wrap { opacity: .45; pointer-events: none; }
+
+.inv-table .inv-staple-tag {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  background: #dbeafe; color: #1a1d26;
+  border: 1px solid #bfdbfe; border-radius: 4px;
+  padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.inv-table .inv-launch-tag {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  background: #ede9fe; color: #1a1d26;
+  border: 1px solid #ddd6fe; border-radius: 4px;
+  padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.inv-table .inv-seasonal-tag {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  background: #f5f5f5; color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.inv-table .inv-oos-tag {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  background: #fee2e2; color: #1a1d26;
+  border: 1px solid #fecaca; border-radius: 4px;
+  padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.inv-table .inv-yn { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid; text-transform: uppercase; }
+.inv-table .inv-yn-y { color: #1a1d26; border-color: #bbf7d0; background: #d1fae5; }
+.inv-table .inv-yn-n { color: #1a1d26; border-color: #fecaca; background: #fee2e2; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Inventory Overview</div>
+    <div class="login-brand">State and Liberty</div>
+    <div class="login-divider"></div>
+
+    <div class="login-field">
+      <label>Store</label>
+      <select id="login-store">
+        <option value="">Loading stores…</option>
+      </select>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+
+    <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
+
+    <button class="login-btn" id="login-btn" onclick="attemptLogin()">Sign In</button>
+    <div class="login-footer">State and Liberty · Inventory Overview</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     APP (shown after login)
+══════════════════════════════════════════════ -->
+<div id="app-screen" style="display:none">
+
+  <!-- Minimal header: store name + sign out -->
+  <div class="top-bar">
+    <div class="logo">Inventory Overview</div>
+    <div class="store-wrap">
+      <span class="store-label">Store</span>
+      <span class="active-store-label" id="active-store-label">—</span>
+    </div>
+    <div class="top-right">
+      <button class="btn-logout" onclick="signOut()">⎋ Sign out</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB: INVENTORY OVERVIEW
+       Excludes items that are "Eligible to Purge"
+       (One Off family + Non Moving — extended later for Slow Moving + Seasonal)
+  ══════════════════════════════════════════════ -->
+  <div class="tab-content active" id="tab-inventory">
+    <!-- ── New filter toolbar (replaces the old pill row) ─────────────
+         Layout: [Filter ▾]  [Search ...]                       [Not Being Replenished (n)]  [🖨️ Print]
+         The Filter button opens an absolutely-positioned dropdown panel below it.
+         NBR is a separate toggle on the right with a live red badge count.
+    ───────────────────────────────────────────────────────────────── -->
+    <div class="inv-toolbar">
+      <div class="inv-toolbar-left">
+        <button type="button" id="inv-filter-btn" class="inv-filter-btn" onclick="invTogglePanel(event)" aria-haspopup="true" aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span>Filter</span>
+          <span class="inv-filter-count" id="inv-filter-count" style="display:none">0</span>
+          <svg class="inv-chev-down" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <div class="inv-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" id="inv-search" placeholder="Search products…" oninput="renderInventory()" />
+        </div>
+      </div>
+
+      <div class="inv-toolbar-right">
+        <button type="button" id="inv-nbr-btn" class="inv-nbr-btn" onclick="invToggleNbr()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Not being replenished</span>
+          <span class="inv-nbr-badge" id="inv-nbr-badge">0</span>
+        </button>
+        <button type="button" id="inv-print-btn" class="inv-print-btn" onclick="printInventory()" title="Print filtered view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
+      </div>
+
+      <!-- Filter dropdown panel — child of .inv-toolbar so its absolute
+           positioning anchors to the toolbar (the nearest positioned ancestor).
+           Hidden by default; toggled by invTogglePanel(). The three groups are
+           independent: Stock Status (multi-checkbox), Category (radio), Tags (multi-checkbox).
+           All edits go to "draft" state until Apply is clicked. -->
+      <div class="inv-filter-panel" id="inv-filter-panel" style="display:none">
+        <div class="inv-filter-panel-cols">
+          <div class="inv-filter-group">
+            <div class="inv-filter-group-title">STOCK STATUS</div>
+            <label class="inv-filter-row inv-filter-row-sticky"><input type="checkbox" data-invfg="stock-all" value="all"> <span>All products</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="stock" value="oh">      <span>On Hand</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="stock" value="transit"> <span>In Transit</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="stock" value="oos">     <span>Out of Stock</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="stock" value="low">     <span>Low Inventory</span></label>
+          </div>
+          <div class="inv-filter-group">
+            <div class="inv-filter-group-title">CATEGORY</div>
+            <div id="inv-filter-cat-list">
+              <!-- Populated dynamically by invBuildCategoryFilter() with All + each product type -->
+            </div>
+          </div>
+          <div class="inv-filter-group">
+            <div class="inv-filter-group-title">TAGS</div>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="tag" value="staple">    <span>Staple</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="tag" value="seasonal">  <span>Seasonal</span></label>
+            <label class="inv-filter-row"><input type="checkbox" data-invfg="tag" value="newLaunch"> <span>New Launch</span></label>
+          </div>
+        </div>
+        <div class="inv-filter-panel-foot">
+          <button type="button" class="inv-filter-clear" onclick="invFilterClearDraft()">Clear all</button>
+          <button type="button" class="inv-filter-apply" onclick="invFilterApply()">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- "← Back to filters" link, shown only while NBR mode is active. -->
+    <div class="inv-nbr-banner" id="inv-nbr-banner" style="display:none">
+      <span>Showing only items not being replenished.</span>
+      <button type="button" class="inv-nbr-back" onclick="invToggleNbr()">← Back to filters</button>
+    </div>
+
+    <div class="summary-bar inv-summary-bar">
+      <div class="stat"><span class="stat-val v-white" id="inv-s-total">0</span><span class="stat-label">Number of Styles</span></div>
+      <div class="stat"><span class="stat-val v-white" id="inv-s-oh">0</span><span class="stat-label">Total Units On Hand</span></div>
+      <div class="stat"><span class="stat-val v-white" id="inv-s-oos">0</span><span class="stat-label">Out of Stock</span></div>
+      <div class="stat"><span class="stat-val v-white inv-stat-nbr" id="inv-s-nbr">0</span><span class="stat-label">Not Being Replenished</span></div>
+    </div>
+    <div class="table-outer" id="inv-table-outer">
+      <div class="center-msg">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DATA SOURCE — live Dashboardv3 CDN (unchanged from source dashboard)
+// ══════════════════════════════════════════════════════════════
+const GITHUB_DATA = 'https://cdn.jsdelivr.net/gh/JaysonSNL13/Dashboardv3@main/data';
+
+// Fixed-password gate (case-sensitive, includes the exclamation mark)
+const LOGIN_PASSWORD = 'Goblue!';
+
+// ── Shared helpers ──────────────────────────────────────── (verbatim from source)
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// ── State expected by the Inventory Overview render path ──
+let inventoryOverviewData = {};  // { storeName: [...inventoryOverview items...] }
+let activeStore   = '';
+// SCM user so all Inventory-Overview columns/pills render exactly as in the dashboard
+let currentUser   = { username: 'SCM', store: '', isAll: false, isSCM: true };
+
+// ── Inventory Overview state ────────────────────────────── (verbatim from source)
+let invState = {
+  // ── Committed filters (drive the table) ────────────────────
+  stockStatusSet: new Set(),    // 'oh' | 'transit' | 'oos' | 'low'  — empty = no filter
+  tagSet:         new Set(),    // 'staple' | 'seasonal' | 'newLaunch' — empty = no filter
+  catFilter:      'all',
+  searchQ:        '',
+
+  // ── NBR mode (overrides the filters) ───────────────────────
+  nbrActive:     false,
+  nbrSavedState: null,          // snapshot of the three filter sets when NBR entered
+
+  // ── Panel state (draft while editing) ──────────────────────
+  panelOpen:           false,
+  draftStockStatusSet: new Set(),
+  draftTagSet:         new Set(),
+  draftCatFilter:      'all',
+
+  // ── Table state ────────────────────────────────────────────
+  expanded: {},     // { parentName: true } — which parent rows are expanded
+  sortKey:  null,
+  sortDir:  'asc'
+};
+
+// Fetch a single store's data from GitHub (same filename convention as source)
+async function fetchStoreData(storeName) {
+  const fileName = storeName.replace(/[^a-zA-Z0-9]/g, '-') + '.json';
+  const res  = await fetch(GITHUB_DATA + '/' + fileName + '?t=' + Date.now(), { cache: 'no-store' });
+  return await res.json();
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOGIN / SIGN OUT  (new gate — replaces the dashboard's user auth)
+// ══════════════════════════════════════════════════════════════
+let storesList = [];
+
+async function loadStores() {
+  const sel = document.getElementById('login-store');
+  try {
+    const res  = await fetch(GITHUB_DATA + '/index.json?t=' + Date.now(), { cache: 'no-store' });
+    const data = await res.json();
+
+    // `stores` in index.json is an array of display-name strings, but handle
+    // objects defensively too (name/store/storeName). Fall back to unique
+    // store names from `users` if `stores` is absent.
+    let list = Array.isArray(data.stores) ? data.stores.slice() : [];
+    list = list.map(s => (typeof s === 'string') ? s
+      : (s && (s.name || s.store || s.storeName || s.displayName)) || '').filter(Boolean);
+
+    if (!list.length && Array.isArray(data.users)) {
+      const set = new Set();
+      data.users.forEach(u => { if (u && u.store && u.store !== 'All Stores') set.add(u.store); });
+      list = [...set];
+    }
+
+    storesList = list;
+    sel.innerHTML = '';
+    if (!list.length) { sel.innerHTML = '<option value="">No stores found</option>'; return; }
+
+    const def = data.meta && data.meta.defaultStore;
+    list.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (def && s === def) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Could not load stores</option>';
+  }
+}
+
+async function attemptLogin() {
+  const store = document.getElementById('login-store').value;
+  const pw    = document.getElementById('login-password').value; // exact match — no trim
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.classList.remove('visible');
+
+  if (!store) {
+    errEl.textContent = 'Please select a store.';
+    errEl.classList.add('visible');
+    return;
+  }
+  if (pw !== LOGIN_PASSWORD) {
+    errEl.textContent = 'Incorrect password. Please try again.';
+    errEl.classList.add('visible');
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-password').focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  // Wire the chosen store into the existing render path
+  currentUser = { username: 'SCM', store: store, isAll: false, isSCM: true };
+  activeStore = store;
+
+  try {
+    const sd = await fetchStoreData(store);
+    inventoryOverviewData = {};
+    inventoryOverviewData[store] = sd.inventoryOverview || [];
+  } catch (e) {
+    errEl.textContent = 'Could not load store data. Please try again.';
+    errEl.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+    return;
+  }
+
+  // Reveal the app, hide the login card
+  document.getElementById('active-store-label').textContent = store;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+
+  // Fresh view for the selected store
+  invState.expanded = {};
+  renderInventory();
+
+  btn.disabled = false;
+  btn.textContent = 'Sign In';
+}
+
+function signOut() {
+  // Reset everything back to a clean login state
+  activeStore = '';
+  inventoryOverviewData = {};
+  currentUser = { username: 'SCM', store: '', isAll: false, isSCM: true };
+  invState.expanded = {};
+  invState.stockStatusSet = new Set();
+  invState.tagSet         = new Set();
+  invState.catFilter      = 'all';
+  invState.searchQ        = '';
+  invState.nbrActive      = false;
+  invState.nbrSavedState  = null;
+  invState.panelOpen      = false;
+  invState.sortKey        = null;
+  invState.sortDir        = 'asc';
+
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').classList.remove('visible');
+  const searchEl = document.getElementById('inv-search');
+  if (searchEl) searchEl.value = '';
+}
+
+// ══════════════════════════════════════════════════════════════
+// INVENTORY OVERVIEW — carried over VERBATIM from the source dashboard
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * "Out of stock" test for an inventory item — matches the source standalone
+ * logic: if any size has optimalStock > 0 but no OH anywhere, it's OOS.
+ */
+function invIsOos(p) {
+  const totalOH = (p.summary && p.summary.totalOH) || 0;
+  if (totalOH > 0) return false;
+  if (Array.isArray(p.sizes) && p.sizes.some(s => s.optimalStock !== undefined))
+    return p.sizes.some(s => (s.optimalStock || 0) > 0);
+  return true;
+}
+
+/**
+ * Per-size "Low Inventory" test — true when this size has fewer units on
+ * hand than it typically sells in a week.
+ *   • size.oh < size.avgWeeklySales  AND  size.avgWeeklySales > 0
+ *   • size.oh CAN be 0 if the size has sales (means OOS-with-demand, urgent)
+ *   • Both zero → not low (no signal either way; this is just dead stock)
+ */
+function invIsSizeLow(sz) {
+  if (!sz) return false;
+  const avgWk = sz.avgWeeklySales || 0;
+  const oh    = sz.oh || 0;
+  if (avgWk <= 0) return false; // no demand signal → can't call it "low"
+  return oh < avgWk;
+}
+
+/**
+ * Count of sizes currently flagged as Low Inventory on this parent.
+ * Used by both the parent-cell highlight (≥2 sizes low) and the
+ * "Low Inventory" filter pill.
+ */
+function invLowSizeCount(p) {
+  if (!Array.isArray(p.sizes)) return 0;
+  let n = 0;
+  for (let i = 0; i < p.sizes.length; i++) if (invIsSizeLow(p.sizes[i])) n++;
+  return n;
+}
+
+/**
+ * Parent-level "Low Inventory" test — used by the filter pill and the
+ * parent OH cell highlight.
+ * Rules:
+ *   • Total parent OH > 0   (zero total OH is OOS, not Low — excluded entirely)
+ *   • 2 or more sizes are individually low
+ * A single low size is still visible (orange highlight on that size row in the
+ * dropdown) but doesn't flag the parent.
+ */
+function invIsLowInventory(p) {
+  const totalOH = (p.summary && p.summary.totalOH) || 0;
+  if (totalOH <= 0) return false; // OOS, not Low — keep them separate
+  return invLowSizeCount(p) >= 2;
+}
+
+/**
+ * Color class for the "Sizes Available" text cell:
+ *   • green if 100% of sizes are in stock (full size run)
+ *   • red   if < 50% of sizes are in stock, OR if 2 of the 3 middle sizes are missing
+ *   • ''    (default/black) for everything in between
+ *
+ * Note: this is now the SINGLE source of truth for the "broken" concept —
+ * the standalone invIsBrokenSizeRun helper is still kept for CSV/print export
+ * but the in-table BROKEN pill has been removed (red color carries the signal now).
+ */
+function invSizesAvailableCls(p) {
+  // Under the Not Being Replenished view, the cell shows a size list, not
+  // a stock fraction — let it render in default color so it reads naturally.
+  if (invState.nbrActive) return '';
+  if (!Array.isArray(p.sizes) || p.sizes.length === 0) return '';
+  const total = p.sizes.length;
+  const withOH = p.sizes.filter(sz => (sz.oh || 0) > 0).length;
+  const pct = withOH / total;
+  if (pct >= 1) return 'inv-sizes-ok';       // 100% — full run
+  if (pct < 0.5 || invIsBrokenSizeRun(p)) return 'inv-sizes-broken';
+  return '';                                  // default/black
+}
+
+/**
+ * "Broken size run" test — true when 2 of the 3 MIDDLE sizes of a product
+ * are at zero on-hand. The middle 3 sizes are typically the highest-demand
+ * sizes (e.g. M/L/XL for shirts; 40/42/44 for blazers). Missing 2+ of these
+ * means the product won't fit most customers even if it isn't fully OOS.
+ *
+ * Examples:
+ *   sizes: [S, M, L, XL, XXL]      → middle 3 are M, L, XL (indices 1,2,3)
+ *   sizes: [38, 40, 42, 44, 46]    → middle 3 are 40, 42, 44 (indices 1,2,3)
+ *   sizes: [S, M, L]               → middle 3 are S, M, L   (all of them)
+ *   sizes: [29, 30, 31, 32, 33, 34] → middle 3 are 31, 32, 33 (indices 2,3,4)
+ *
+ * Products with fewer than 3 sizes: count zero-OH against the smaller set.
+ */
+function invIsBrokenSizeRun(p) {
+  if (!Array.isArray(p.sizes) || p.sizes.length === 0) return false;
+  const n = p.sizes.length;
+  let middle;
+  if (n <= 3) {
+    middle = p.sizes;
+  } else {
+    const start = Math.floor((n - 3) / 2);
+    middle = p.sizes.slice(start, start + 3);
+  }
+  const zeroes = middle.filter(sz => (sz.oh || 0) === 0).length;
+  return zeroes >= 2;
+}
+
+/**
+ * "Not Being Replenished" — per-size test.
+ * A size qualifies when:
+ *   • Warehouse can actually fulfill it: WH OH ≥ 20 OR has an active PO
+ *     (a warehouse with 3 units and no PO can't really replenish — don't flag)
+ *   • Store threshold is 0 (no replenishment target set)
+ *   • Store has nothing right now AND nothing coming in
+ *     (OH + In Transit = 0)
+ *
+ * Backwards compatibility: older JSON files (before v9.1) don't include
+ * sz.warehouseOH. In that case we fall back to the legacy check
+ * (sz.warehouseAvailable, which is WH > 5) so the dashboard keeps working
+ * after a frontend deploy but before the next Apps Script push.
+ */
+function invIsSizeNotReplenished(sz) {
+  if (!sz) return false;
+  // Warehouse can replenish? Need WH OH ≥ 20 OR an active PO.
+  // If warehouseOH isn't on the JSON yet (legacy data), accept warehouseAvailable instead.
+  const whOH = (typeof sz.warehouseOH === 'number') ? sz.warehouseOH : null;
+  const whCanReplenish = whOH !== null
+    ? (whOH >= 20 || sz.onOrder === true)
+    : (sz.warehouseAvailable === true);
+  if (!whCanReplenish) return false;
+  if ((sz.optimalStock || 0) > 0)               return false;
+  if (((sz.oh || 0) + (sz.inTransit || 0)) > 0) return false;
+  return true;
+}
+
+/**
+ * Parent-level Not Being Replenished test. True if ANY size of the parent
+ * meets the per-size rule. One forgotten size is enough to surface the parent.
+ */
+function invIsNotBeingReplenished(p) {
+  if (!Array.isArray(p.sizes) || p.sizes.length === 0) return false;
+  return p.sizes.some(invIsSizeNotReplenished);
+}
+
+/**
+ * List of sizes that are Not Being Replenished for this parent.
+ * Used by invSizesDisplay() when the NBR filter is active.
+ * Returns an array of size labels (e.g. ['M', 'L'] or ['40', '42']).
+ */
+function invNotReplenishedSizes(p) {
+  if (!Array.isArray(p.sizes)) return [];
+  return p.sizes.filter(invIsSizeNotReplenished).map(sz => String(sz.size || '').trim()).filter(Boolean);
+}
+
+/**
+ * What to show in the "Sizes Available" cell.
+ *   • If the Not Being Replenished filter is active → list the sizes not
+ *     being replenished ("M, L", "40, 42") — or "All" if the whole product is
+ *     affected (every size qualifies).
+ *   • Any other filter → show the normal fraction (e.g. "5/9").
+ */
+function invSizesDisplay(p, defaultFraction) {
+  if (!invState.nbrActive) return defaultFraction || '—';
+  const sizes = invNotReplenishedSizes(p);
+  if (!sizes.length) return defaultFraction || '—';
+  if (sizes.length === (p.sizes || []).length) return 'All';
+  return sizes.join(', ');
+}
+
+/**
+ * Normalize the "Also Available At" cell value. The Apps Script writes
+ * 'Warehouse' as of v8.9, but older JSON files from previous pushes still say
+ * 'In Warehouse'. This helper renders both as 'Warehouse' so the UI is
+ * consistent immediately — no Apps Script re-push required.
+ */
+function invStoreOptionLabel(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (s.toLowerCase() === 'in warehouse') return 'Warehouse';
+  return s;
+}
+
+/**
+ * Format an ETA into the same "Early/Mid/End of <Month>" or "In WH — Pending"
+ * label that the source uses.
+ */
+function invFmtEta(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (!s || s === '0' || parseFloat(s) === 0) return '';
+  if (/^(Early|Mid|End)/i.test(s)) return s;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  const diff = Math.round((d - new Date()) / 86400000);
+  if (diff < 0) return 'In WH — Pending';
+  const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day = d.getDate(), m = mn[d.getMonth()];
+  if (day <= 10) return 'Early ' + m;
+  if (day <= 20) return 'Mid '   + m;
+  return 'End of ' + m;
+}
+
+// ══════════════════════════════════════════════════════════════
+// INVENTORY FILTER UI — new model (Filter button + dropdown panel,
+// Search, NBR toggle button)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Toggle the filter dropdown panel open/closed.
+ * Opening syncs the draft state from the committed state so the user starts
+ * with whatever filters are currently applied.
+ */
+function invTogglePanel(e) {
+  // Defensive: if invoked from the button's onclick attribute, prevent the
+  // click from bubbling up and immediately triggering the document close
+  // listener (the race that was instantly hiding the panel).
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  if (invState.nbrActive) return; // panel disabled while in NBR mode
+  invState.panelOpen = !invState.panelOpen;
+  const panel = document.getElementById('inv-filter-panel');
+  const btn   = document.getElementById('inv-filter-btn');
+  if (!panel || !btn) return;
+  if (invState.panelOpen) {
+    // Seed draft from current committed state
+    invState.draftStockStatusSet = new Set(invState.stockStatusSet);
+    invState.draftTagSet         = new Set(invState.tagSet);
+    invState.draftCatFilter      = invState.catFilter;
+    invSyncPanelInputs();
+    panel.style.display = 'block';  // explicit (not '' which can resolve to grid/inline)
+    btn.setAttribute('aria-expanded', 'true');
+  } else {
+    panel.style.display = 'none';
+    btn.setAttribute('aria-expanded', 'false');
+  }
+}
+
+/**
+ * Close the panel without applying. Used by the global click-outside listener.
+ */
+function invClosePanel() {
+  if (!invState.panelOpen) return;
+  invState.panelOpen = false;
+  const panel = document.getElementById('inv-filter-panel');
+  const btn   = document.getElementById('inv-filter-btn');
+  if (panel) panel.style.display = 'none';
+  if (btn)   btn.setAttribute('aria-expanded', 'false');
+}
+
+/**
+ * Reflect the draft state into the actual <input> checkboxes/radios in the panel.
+ * Called when opening the panel or after Clear All.
+ */
+function invSyncPanelInputs() {
+  // Stock Status checkboxes
+  document.querySelectorAll('#inv-filter-panel input[data-invfg="stock"]').forEach(inp => {
+    inp.checked = invState.draftStockStatusSet.has(inp.value);
+  });
+  // "All products" sticky checkbox — checked when none of the 4 stock options are picked
+  const allInp = document.querySelector('#inv-filter-panel input[data-invfg="stock-all"]');
+  if (allInp) allInp.checked = (invState.draftStockStatusSet.size === 0);
+  // Tag checkboxes
+  document.querySelectorAll('#inv-filter-panel input[data-invfg="tag"]').forEach(inp => {
+    inp.checked = invState.draftTagSet.has(inp.value);
+  });
+  // Category radios — rebuilt every render via invBuildCategoryFilter
+  document.querySelectorAll('#inv-filter-panel input[data-invfg="cat"]').forEach(inp => {
+    inp.checked = (inp.value === invState.draftCatFilter);
+  });
+}
+
+/**
+ * Apply the draft state to the committed state and re-render.
+ */
+function invFilterApply() {
+  invState.stockStatusSet = new Set(invState.draftStockStatusSet);
+  invState.tagSet         = new Set(invState.draftTagSet);
+  invState.catFilter      = invState.draftCatFilter || 'all';
+  invClosePanel();
+  invUpdateFilterButtonState();
+  renderInventory();
+}
+
+/**
+ * Reset all draft selections (panel only — doesn't commit until Apply).
+ */
+function invFilterClearDraft() {
+  invState.draftStockStatusSet = new Set();
+  invState.draftTagSet         = new Set();
+  invState.draftCatFilter      = 'all';
+  invSyncPanelInputs();
+}
+
+/**
+ * Toggle the NBR view on/off.
+ *   ON  : snapshot current filters, override to NBR-only view, gray out the panel
+ *   OFF : restore the saved snapshot
+ */
+function invToggleNbr() {
+  if (!invState.nbrActive) {
+    // Entering NBR mode — snapshot the current filter state for the "back" link
+    invState.nbrSavedState = {
+      stockStatusSet: new Set(invState.stockStatusSet),
+      tagSet:         new Set(invState.tagSet),
+      catFilter:      invState.catFilter
+    };
+    invState.nbrActive = true;
+    invClosePanel(); // ensure panel isn't left open
+  } else {
+    // Leaving NBR — restore previous filter state
+    if (invState.nbrSavedState) {
+      invState.stockStatusSet = new Set(invState.nbrSavedState.stockStatusSet);
+      invState.tagSet         = new Set(invState.nbrSavedState.tagSet);
+      invState.catFilter      = invState.nbrSavedState.catFilter;
+    }
+    invState.nbrSavedState = null;
+    invState.nbrActive = false;
+  }
+  invUpdateFilterButtonState();
+  renderInventory();
+}
+
+/**
+ * Reflect the current state on the toolbar buttons:
+ *   • Filter button shows a count badge when filters are active
+ *   • NBR button shows "active" styling when on
+ *   • Toolbar root gets is-nbr-mode class to gray out the panel side
+ *   • Back-to-filters banner shows under the toolbar
+ */
+function invUpdateFilterButtonState() {
+  const toolbar = document.querySelector('#tab-inventory .inv-toolbar');
+  const filterBtn = document.getElementById('inv-filter-btn');
+  const nbrBtn    = document.getElementById('inv-nbr-btn');
+  const banner    = document.getElementById('inv-nbr-banner');
+  const countEl   = document.getElementById('inv-filter-count');
+  if (!toolbar || !filterBtn || !nbrBtn) return;
+
+  // NBR active styles
+  toolbar.classList.toggle('is-nbr-mode', invState.nbrActive);
+  nbrBtn.classList.toggle('is-active', invState.nbrActive);
+  if (banner) banner.style.display = invState.nbrActive ? '' : 'none';
+
+  // Filter button count badge
+  const totalFilters = invState.stockStatusSet.size + invState.tagSet.size +
+                       (invState.catFilter && invState.catFilter !== 'all' ? 1 : 0);
+  if (countEl) {
+    if (totalFilters > 0 && !invState.nbrActive) {
+      countEl.style.display = '';
+      countEl.textContent = totalFilters;
+      filterBtn.classList.add('is-active');
+    } else {
+      countEl.style.display = 'none';
+      filterBtn.classList.remove('is-active');
+    }
+  }
+}
+
+/**
+ * Build the Category radio list inside the dropdown panel.
+ * Called every render so the list reflects the actual categories present in
+ * the current store's inventory. "All Categories" is always pinned at the top.
+ */
+function invBuildCategoryFilter(items) {
+  const list = document.getElementById('inv-filter-cat-list');
+  if (!list) return;
+  const cats = new Set();
+  items.forEach(p => { if (p.productType) cats.add(p.productType); });
+  const sorted = [...cats].sort();
+  const cur = invState.draftCatFilter || invState.catFilter || 'all';
+  // "All categories" stays as a full-width row at top — same treatment as the
+  // "All products" sticky checkbox on the Stock Status group.
+  let html = `<label class="inv-filter-row inv-filter-row-sticky"><input type="radio" name="inv-cat-radio" data-invfg="cat" value="all"${cur === 'all' ? ' checked' : ''}> <span>All categories</span></label>`;
+  // The remaining categories flow into a two-column container so a long list
+  // stays compact and Apply is still within easy reach below the panel.
+  html += '<div class="inv-filter-cat-cols">';
+  sorted.forEach(c => {
+    html += `<label class="inv-filter-row"><input type="radio" name="inv-cat-radio" data-invfg="cat" value="${escapeHtml(c)}"${cur === c ? ' checked' : ''}> <span>${escapeHtml(c)}</span></label>`;
+  });
+  html += '</div>';
+  list.innerHTML = html;
+}
+
+// One-time wire-up of panel input change events. Updates draft state
+// on every click. Idempotent — safe to call multiple times since the
+// event listener is attached to the panel container only once via dataset flag.
+function invWirePanelEvents() {
+  const panel = document.getElementById('inv-filter-panel');
+  if (!panel || panel.dataset.wired === '1') return;
+  panel.dataset.wired = '1';
+  panel.addEventListener('change', function (e) {
+    const inp = e.target;
+    if (!inp.dataset || !inp.dataset.invfg) return;
+    const g = inp.dataset.invfg;
+    if (g === 'stock-all') {
+      // "All products" sticky checkbox — clear the 4 specific stock options.
+      // It's a one-way toggle: clicking it ON clears others; clicking OFF is
+      // not meaningful (an empty selection IS "all"), so we re-check it.
+      invState.draftStockStatusSet.clear();
+      inp.checked = true;
+      // Reflect the cleared state in the 4 sibling checkboxes
+      document.querySelectorAll('#inv-filter-panel input[data-invfg="stock"]').forEach(c => { c.checked = false; });
+    } else if (g === 'stock') {
+      if (inp.checked) invState.draftStockStatusSet.add(inp.value);
+      else             invState.draftStockStatusSet.delete(inp.value);
+      // Sync the sticky "All products" checkbox: checked iff no specific options chosen
+      const allInp = document.querySelector('#inv-filter-panel input[data-invfg="stock-all"]');
+      if (allInp) allInp.checked = (invState.draftStockStatusSet.size === 0);
+    } else if (g === 'tag') {
+      if (inp.checked) invState.draftTagSet.add(inp.value);
+      else             invState.draftTagSet.delete(inp.value);
+    } else if (g === 'cat') {
+      invState.draftCatFilter = inp.value;
+    }
+  });
+  // Click outside the panel/button → close (without applying).
+  // We wrap in setTimeout to push to the next tick, ensuring the opening
+  // click can never trigger this handler in the same event loop iteration.
+  document.addEventListener('click', function (e) {
+    setTimeout(function () {
+      if (!invState.panelOpen) return;
+      const btn = document.getElementById('inv-filter-btn');
+      if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+      invClosePanel();
+    }, 0);
+  });
+}
+
+/**
+ * Shared filter logic — returns the products currently visible after applying:
+ *   • Visibility rule (must have OH > 0 OR threshold > 0 OR in-transit > 0)
+ *   • Category dropdown
+ *   • Search query
+ *   • Pill filter (All / OH / Transit / OOS / Low / NBR / Staples)
+ *
+ * Used by renderInventory, exportInventoryCSV, and printInventory so the
+ * three views always agree on what "the current filter" means.
+ *
+ * Reads invState directly — assumes searchQ has already been synced from the
+ * <input> by the caller (renderInventory does this; CSV/print just rely on
+ * whatever was last seen typed).
+ */
+function invGetFilteredItems() {
+  const rawItems = inventoryOverviewData[activeStore] || [];
+  if (!rawItems.length) return [];
+
+  // Visibility: at least one size has OH, threshold, or in-transit
+  const visible = rawItems.filter(p =>
+    Array.isArray(p.sizes) && p.sizes.some(sz =>
+      (sz.oh || 0) > 0 || (sz.optimalStock || 0) > 0 || (sz.inTransit || 0) > 0
+    )
+  );
+
+  // ── NBR override: when active, ignore all filter selections and show only NBR ──
+  if (invState.nbrActive) {
+    return visible.filter(invIsNotBeingReplenished);
+  }
+
+  const q   = invState.searchQ;
+  const cat = invState.catFilter;
+  const stockSet = invState.stockStatusSet;  // OR within
+  const tagSet   = invState.tagSet;          // OR within
+
+  return visible.filter(p => {
+    // Category — single-select
+    if (cat !== 'all' && p.productType !== cat) return false;
+
+    // Search
+    if (q) {
+      const hay = ((p.productName || '') + ' ' + (p.productType || '') + ' ' +
+                   ((p.sizes || []).map(s => s.size || '').join(' '))).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    // Stock Status — OR logic across checkboxes. Empty set = no restriction.
+    if (stockSet.size > 0) {
+      let matchStock = false;
+      if (stockSet.has('oh')      && ((p.summary && p.summary.totalOH)        || 0) > 0) matchStock = true;
+      if (stockSet.has('transit') && ((p.summary && p.summary.totalInTransit) || 0) > 0) matchStock = true;
+      if (stockSet.has('oos')     && invIsOos(p))            matchStock = true;
+      if (stockSet.has('low')     && invIsLowInventory(p))   matchStock = true;
+      if (!matchStock) return false;
+    }
+
+    // Tags — OR logic across checkboxes. Empty set = no restriction.
+    if (tagSet.size > 0) {
+      let matchTag = false;
+      if (tagSet.has('staple')    && p.isStaple)    matchTag = true;
+      if (tagSet.has('seasonal')  && p.isSeasonal)  matchTag = true;
+      if (tagSet.has('newLaunch') && p.isNewLaunch) matchTag = true;
+      if (!matchTag) return false;
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Main render — called when the user opens the Inventory tab, switches stores,
+ * types in the search box, or toggles a filter pill.
+ */
+function renderInventory() {
+  const wrap = document.getElementById('inv-table-outer');
+  if (!wrap) return;
+
+  // Pull search input each render so user typing is captured
+  const searchEl = document.getElementById('inv-search');
+  if (searchEl) invState.searchQ = (searchEl.value || '').toLowerCase().trim();
+
+  const rawItems = inventoryOverviewData[activeStore] || [];
+  if (!rawItems.length) {
+    wrap.innerHTML = '<div class="center-msg">No inventory data for this store. Run PD7_pushEverything() in Apps Script.</div>';
+    invUpdateSummary(0, 0, 0, 0);
+    return;
+  }
+
+  // ── Unfiltered "visible" set — used to build the category dropdown options
+  // so the dropdown shows every category that exists for this store, not just
+  // those that survived the current filter.
+  // ──────────────────────────────────────────────────────────────
+  const visible = rawItems.filter(p =>
+    Array.isArray(p.sizes) && p.sizes.some(sz =>
+      (sz.oh || 0) > 0 || (sz.optimalStock || 0) > 0 || (sz.inTransit || 0) > 0
+    )
+  );
+
+  // ── Fully filtered set (visibility + category + search + pill) ──
+  const filtered = invGetFilteredItems();
+
+  // ── Summary counters ──
+  // Counts reflect the FILTERED set so they always match what's visible in the table.
+  let totOH = 0, oosCount = 0;
+  filtered.forEach(p => {
+    totOH += (p.summary && p.summary.totalOH) || 0;
+    if (invIsOos(p)) oosCount++;
+  });
+  // NBR count is computed across the full unfiltered visible set so the
+  // toolbar badge stays accurate as a passive alert regardless of what's
+  // currently being filtered.
+  const nbrCount = visible.filter(invIsNotBeingReplenished).length;
+  invUpdateSummary(filtered.length, totOH, oosCount, nbrCount);
+
+  // Build category dropdown options from full visible set (so user can filter
+  // across the entire inventory, not just the current filter selections)
+  invBuildCategoryFilter(visible);
+
+  // First-time wire-up of the filter panel events (idempotent)
+  invWirePanelEvents();
+  // Refresh button/badge active states for the new render
+  invUpdateFilterButtonState();
+
+  // ── Apply column sort if any ──
+  // Sorts are stable: clicking a column once sorts ASC, clicking again toggles DESC.
+  // For text columns we use locale-aware compare; for numbers, numeric compare;
+  // for Y/N flags, true sorts before false ascending. The sort happens on the
+  // filtered set so search + pills + category still apply.
+  if (invState.sortKey) {
+    const key = invState.sortKey;
+    const dir = invState.sortDir === 'desc' ? -1 : 1;
+    // Tag priority for sorting Product Tags column:
+    //   NEW LAUNCH (3) > STAPLE (2) > SEASONAL (1) > none (0)
+    function _tagRank(p) {
+      if (p.isNewLaunch) return 3;
+      if (p.isStaple)    return 2;
+      if (p.isSeasonal)  return 1;
+      return 0;
+    }
+    // ETA → numeric "days from today"; missing/invalid sort to the end on ASC.
+    function _etaDays(p) {
+      const s = (p.summary && p.summary.eta) || '';
+      if (!s) return Number.POSITIVE_INFINITY;
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) return Math.round((d - new Date()) / 86400000);
+      // Already-formatted strings like "Mid May" — best-effort: rank by month order
+      const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const lower = s.toLowerCase();
+      for (let i = 0; i < 12; i++) if (lower.indexOf(months[i]) !== -1) {
+        // Within the month, Early < Mid < End
+        const sub = lower.indexOf('early') !== -1 ? 0 : lower.indexOf('mid') !== -1 ? 1 : 2;
+        return i * 100 + sub;
+      }
+      return Number.POSITIVE_INFINITY;
+    }
+    // Last Restock → ms since epoch; missing sort to the end on ASC.
+    function _restockMs(p) {
+      let latest = '';
+      (p.sizes || []).forEach(sz => {
+        if (sz.lastRestockDate && (!latest || sz.lastRestockDate > latest)) latest = sz.lastRestockDate;
+      });
+      if (!latest) return Number.NEGATIVE_INFINITY; // empty → bottom on ASC
+      const d = new Date(latest);
+      return isNaN(d.getTime()) ? Number.NEGATIVE_INFINITY : d.getTime();
+    }
+    function _getVal(p) {
+      const s = p.summary || {};
+      switch (key) {
+        case 'name':        return (p.productName || '').toLowerCase();
+        case 'oh':          return s.totalOH || 0;
+        case 'transit':     return s.totalInTransit || 0;
+        case 'sizesOH':     // sort by numerator of "X/Y" string
+                            return (p.sizes || []).filter(sz => (sz.oh || 0) > 0).length;
+        case 'tag':         return _tagRank(p);
+        case 'lastRestock': return _restockMs(p);
+        case 'whAvail':     return (p.sizes || []).some(sz => sz.warehouseAvailable) ? 1 : 0;
+        case 'onOrder':     return (p.sizes || []).some(sz => sz.onOrder) ? 1 : 0;
+        case 'eta':         return _etaDays(p);
+        case 'l30':         return (p.sizes || []).reduce((sum, sz) => sum + (sz.l30 || 0), 0);
+        case 'l60':         return (p.sizes || []).reduce((sum, sz) => sum + (sz.l60 || 0), 0);
+        case 'avgWk':       return (p.sizes || []).reduce((sum, sz) => sum + (sz.avgWeeklySales || 0), 0);
+        case 'storeOpt':    return ((p.summary && p.summary.storeOption) || '').toLowerCase();
+        default:            return 0;
+      }
+    }
+    filtered.sort((a, b) => {
+      const va = _getVal(a), vb = _getVal(b);
+      if (typeof va === 'string' && typeof vb === 'string') {
+        return va.localeCompare(vb) * dir;
+      }
+      if (va < vb) return -1 * dir;
+      if (va > vb) return  1 * dir;
+      return 0;
+    });
+  }
+
+  // ── Render the table ──
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="center-msg">No products match those filters.</div>';
+    return;
+  }
+
+  let html = '<table class="inv-table"><thead>';
+  // Group header: STORE (5 cols incl. Last Restock) | WAREHOUSE (3 cols) | SALES (3 cols incl. L60)
+  html += '<tr class="group-row">' +
+    '<th class="frozen-col frozen-col-1" style="background:#1a1d26"></th>' +
+    '<th class="frozen-col frozen-col-2" style="background:#1a1d26;text-align:left;padding-left:14px">PRODUCT</th>' +
+    '<th colspan="5" class="group-sep">STORE</th>' +
+    '<th colspan="3" class="group-sep">WAREHOUSE</th>' +
+    '<th colspan="3" class="group-sep">SALES</th>' +
+    '<th>OTHER</th>' +
+  '</tr>';
+  // Build sortable header cells with click handler + visual sort indicator.
+  // Style matches the Purge table: faint ⇅ when not sorted, ↓ when ascending,
+  // ↑ when descending. (Down = small-to-large / A-to-Z.)
+  function _sortableTh(key, label, extraClass) {
+    const cls = 'inv-sortable' + (extraClass ? ' ' + extraClass : '');
+    const arrow = _invArrow(key);
+    return '<th class="' + cls + '" data-inv-sort="' + key + '">' + label + arrow + '</th>';
+  }
+  function _invArrow(key) {
+    if (invState.sortKey !== key) return ' <span class="inv-sort-arrow inv-sort-arrow-idle">⇅</span>';
+    return invState.sortDir === 'asc'
+      ? ' <span class="inv-sort-arrow inv-sort-arrow-active">↓</span>'
+      : ' <span class="inv-sort-arrow inv-sort-arrow-active">↑</span>';
+  }
+  html += '<tr class="col-row">' +
+    '<th class="frozen-col frozen-col-1"></th>' +
+    '<th class="frozen-col frozen-col-2 l inv-sortable" data-inv-sort="name">Parent Name' + _invArrow('name') + '</th>' +
+    // STORE
+    _sortableTh('oh',          'On-Hand Inventory') +
+    _sortableTh('transit',     'In Transit') +
+    _sortableTh('sizesOH',     invState.nbrActive ? 'Sizes Not Being Replenished' : 'Sizes Available') +
+    _sortableTh('tag',         'Product Tags') +
+    _sortableTh('lastRestock', 'Last Restock Date', 'group-sep') +
+    // WAREHOUSE
+    _sortableTh('whAvail',     'Inventory Available') +
+    _sortableTh('onOrder',     'Inventory On Order') +
+    _sortableTh('eta',         'ETA', 'group-sep') +
+    // SALES
+    _sortableTh('l30',         'Last 30 Days Sales') +
+    _sortableTh('l60',         'Last 60 Days Sales') +
+    _sortableTh('avgWk',       'Average Weekly Sales', 'group-sep') +
+    // OTHER — "If we're out, where else?"
+    _sortableTh('storeOpt',    'Also Available At') +
+  '</tr></thead><tbody>';
+
+  filtered.forEach((p, idx) => {
+    const s = p.summary || {};
+    const oh        = s.totalOH        || 0;
+    const transit   = s.totalInTransit || 0;
+    const sizesOH   = s.sizesOnHand   || '—';
+    const eta       = invFmtEta(s.eta);
+    const isOos     = invIsOos(p);
+    const isExpanded = !!invState.expanded[p.productName];
+
+    // Aggregate L30, L60 + avg weekly across sizes
+    const totalL30   = (p.sizes || []).reduce((sum, sz) => sum + (sz.l30 || 0), 0);
+    const totalL60   = (p.sizes || []).reduce((sum, sz) => sum + (sz.l60 || 0), 0);
+    const totalAvgWk = (p.sizes || []).reduce((sum, sz) => sum + (sz.avgWeeklySales || 0), 0);
+
+    // WH availability: Y if any size warehouseAvailable, On Order: Y if any size onOrder
+    const whAvail = (p.sizes || []).some(sz => sz.warehouseAvailable);
+    const onOrder = (p.sizes || []).some(sz => sz.onOrder);
+
+    // Most-recent last-restock date across all sizes (display only)
+    let lastRestockDate = '';
+    (p.sizes || []).forEach(sz => {
+      if (sz.lastRestockDate && (!lastRestockDate || sz.lastRestockDate > lastRestockDate)) {
+        lastRestockDate = sz.lastRestockDate;
+      }
+    });
+
+    // Product Tags: exactly ONE tag per product (mutually exclusive in the JSON).
+    // The Apps Script v8.2 tag resolver guarantees only one of these is true,
+    // following the priority: NEW LAUNCH > STAPLE-from-sheet > SEASONAL > STAPLE-default.
+    // We still check in priority order here as a safety net in case data drifts.
+    let tagsHtml;
+    if      (p.isNewLaunch) tagsHtml = '<span class="inv-launch-tag">NEW LAUNCH</span>';
+    else if (p.isStaple)    tagsHtml = '<span class="inv-staple-tag">STAPLE</span>';
+    else if (p.isSeasonal)  tagsHtml = '<span class="inv-seasonal-tag">SEASONAL</span>';
+    else                    tagsHtml = '<span class="inv-cell-zero">—</span>';
+
+    // OH cell color priority:
+    //   • OH === 0           → red    (.inv-cell-bad)
+    //   • Low Inventory      → orange (.inv-cell-low)   ← takes precedence over green
+    //   • OH > 0 otherwise   → green  (.inv-cell-good)
+    const isLow = invIsLowInventory(p);
+    const ohCellCls      = oh === 0 ? 'inv-cell-bad' : (isLow ? 'inv-cell-low' : 'inv-cell-good');
+    const transitCellCls = transit > 0 ? 'inv-cell-good' : '';
+    const l30CellCls     = totalL30 > 0 ? 'inv-cell-good' : 'inv-cell-bad';
+    const l60CellCls     = totalL60 > 0 ? 'inv-cell-good' : 'inv-cell-bad';
+
+    html +=
+      `<tr class="inv-parent-row${isExpanded ? ' expanded' : ''}" data-inv-parent="${escapeHtml(p.productName)}" onclick="toggleInvExpand('${escapeHtml((p.productName || '').replace(/'/g, "\\'"))}')">` +
+        `<td class="frozen-col frozen-col-1 c"><span class="inv-chev">▶</span></td>` +
+        `<td class="frozen-col frozen-col-2 col-name">${escapeHtml(p.productName || '')}` +
+          `<div class="col-type" style="margin-top:3px">${escapeHtml(p.productType || '')}</div>` +
+        `</td>` +
+        // STORE
+        `<td class="c"><span class="${ohCellCls}">${oh}</span></td>` +
+        `<td class="c">${transit > 0 ? `<span class="${transitCellCls}">${transit}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+        // Sizes Available — colored by stock ratio (green full run / red broken or <50%)
+        // When the Not Being Replenished filter is active, this cell instead lists the
+        // specific sizes that aren't being replenished — see invNotReplenishedDisplay()
+        // for that content swap.
+        `<td class="c inv-sizes-cell"><span class="${invSizesAvailableCls(p)}">${escapeHtml(invSizesDisplay(p, sizesOH))}</span></td>` +
+        `<td class="c">${tagsHtml}</td>` +
+        `<td class="c group-sep">${lastRestockDate ? escapeHtml(lastRestockDate) : '<span class="inv-cell-zero">—</span>'}</td>` +
+        // WAREHOUSE
+        `<td class="c"><span class="inv-yn ${whAvail ? 'inv-yn-y' : 'inv-yn-n'}">${whAvail ? 'Y' : 'N'}</span></td>` +
+        `<td class="c"><span class="inv-yn ${onOrder ? 'inv-yn-y' : 'inv-yn-n'}">${onOrder ? 'Y' : 'N'}</span></td>` +
+        `<td class="c group-sep">${eta || '<span class="inv-cell-zero">—</span>'}</td>` +
+        // SALES
+        `<td class="c">${totalL30 > 0 ? `<span class="${l30CellCls}">${totalL30}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+        `<td class="c">${totalL60 > 0 ? `<span class="${l60CellCls}">${totalL60}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+        `<td class="c group-sep">${totalAvgWk > 0 ? (totalAvgWk % 1 === 0 ? totalAvgWk : totalAvgWk.toFixed(1)) : '<span class="inv-cell-zero">0</span>'}</td>` +
+        // OTHER
+        `<td class="c">${p.summary && p.summary.storeOption ? escapeHtml(invStoreOptionLabel(p.summary.storeOption)) : '<span class="inv-cell-zero">—</span>'}</td>` +
+      `</tr>`;
+
+    // ── Expanded: per-size detail rows ──
+    // Last Restock Date is now in the main row; size name shows without "Size" prefix.
+    if (isExpanded && Array.isArray(p.sizes)) {
+      p.sizes.forEach(sz => {
+        const szOh      = sz.oh || 0;
+        const szTransit = sz.inTransit || 0;
+        const szL30     = sz.l30 || 0;
+        const szL60     = sz.l60 || 0;
+        const szAvgWk   = sz.avgWeeklySales || 0;
+        const szWhAvail = sz.warehouseAvailable;
+        const szOnOrder = sz.onOrder;
+        const szEta     = invFmtEta(sz.eta);
+        // Per-size OH cell color:
+        //   • orange if size is Low Inventory (OH < avg weekly sales, with sales > 0)
+        //   • green  if OH > 0 (healthy stock)
+        //   • red    if OH === 0 (out of stock for this size)
+        const szIsLow   = invIsSizeLow(sz);
+        const szOhCls   = szIsLow ? 'inv-cell-low' : (szOh > 0 ? 'inv-cell-good' : 'inv-cell-bad');
+        const szL30Cls  = szL30 > 0 ? 'inv-cell-good' : 'inv-cell-bad';
+        const szL60Cls  = szL60 > 0 ? 'inv-cell-good' : 'inv-cell-bad';
+
+        html +=
+          `<tr class="inv-size-row">` +
+            `<td class="frozen-col frozen-col-1" style="background:#fafafa"></td>` +
+            `<td class="frozen-col frozen-col-2 l" style="background:#fafafa;padding-left:36px;font-weight:600">${escapeHtml(String(sz.size || ''))}</td>` +
+            // STORE
+            `<td class="c"><span class="${szOhCls}">${szOh}</span></td>` +
+            `<td class="c">${szTransit > 0 ? `<span class="inv-cell-good">${szTransit}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+            `<td class="c"><span class="inv-cell-zero">—</span></td>` +
+            `<td class="c"><span class="inv-cell-zero">—</span></td>` +
+            `<td class="c group-sep">${sz.lastRestockDate ? escapeHtml(sz.lastRestockDate) : '<span class="inv-cell-zero">—</span>'}</td>` +
+            // WAREHOUSE
+            `<td class="c"><span class="inv-yn ${szWhAvail ? 'inv-yn-y' : 'inv-yn-n'}">${szWhAvail ? 'Y' : 'N'}</span></td>` +
+            `<td class="c"><span class="inv-yn ${szOnOrder ? 'inv-yn-y' : 'inv-yn-n'}">${szOnOrder ? 'Y' : 'N'}</span></td>` +
+            `<td class="c group-sep">${szEta || '<span class="inv-cell-zero">—</span>'}</td>` +
+            // SALES
+            `<td class="c">${szL30 > 0 ? `<span class="${szL30Cls}">${szL30}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+            `<td class="c">${szL60 > 0 ? `<span class="${szL60Cls}">${szL60}</span>` : '<span class="inv-cell-zero">0</span>'}</td>` +
+            `<td class="c group-sep">${szAvgWk > 0 ? (szAvgWk % 1 === 0 ? szAvgWk : szAvgWk.toFixed(1)) : '<span class="inv-cell-zero">0</span>'}</td>` +
+            // OTHER — size-level rows don't have their own store-option, blank for alignment
+            `<td class="c"><span class="inv-cell-zero">—</span></td>` +
+          `</tr>`;
+      });
+    }
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  // Wire up sort: delegated click handler on the table's header row.
+  // Re-attached on every render since we rebuild innerHTML.
+  const headers = wrap.querySelectorAll('th.inv-sortable');
+  headers.forEach(th => {
+    th.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const key = th.getAttribute('data-inv-sort');
+      if (!key) return;
+      if (invState.sortKey === key) {
+        // Same column → toggle direction
+        invState.sortDir = invState.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Different column → start ASC
+        invState.sortKey = key;
+        invState.sortDir = 'asc';
+      }
+      renderInventory();
+    });
+  });
+}
+
+function toggleInvExpand(parentName) {
+  if (invState.expanded[parentName]) delete invState.expanded[parentName];
+  else invState.expanded[parentName] = true;
+  renderInventory();
+}
+
+function invUpdateSummary(total, oh, oos, nbrCount) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('inv-s-total', total);
+  set('inv-s-oh',    oh.toLocaleString());
+  set('inv-s-oos',   oos);
+  set('inv-s-nbr',   nbrCount == null ? 0 : nbrCount);
+  // Red the NBR stat when there are issues — matches the badge color
+  const nbrStat = document.getElementById('inv-s-nbr');
+  if (nbrStat) nbrStat.classList.toggle('has-issues', (nbrCount || 0) > 0);
+  // Also refresh the toolbar badge
+  const badge = document.getElementById('inv-nbr-badge');
+  if (badge) {
+    const n = nbrCount || 0;
+    badge.textContent = n;
+    badge.classList.toggle('is-zero', n === 0);
+  }
+}
+
+/**
+ * Print — opens a popup window with a clean, printable version of the
+ * CURRENT filtered inventory (respects pill, category, and search). Avoids
+ * touching the dashboard layout. The user gets their browser's normal print
+ * dialog and can save as PDF or send to a printer.
+ */
+function printInventory() {
+  // Sync search input first
+  const searchEl = document.getElementById('inv-search');
+  if (searchEl) invState.searchQ = (searchEl.value || '').toLowerCase().trim();
+
+  const filtered = invGetFilteredItems();
+  if (!filtered.length) { alert('No products match the current filter — nothing to print.'); return; }
+
+  // Build a compact header so the printed sheet identifies itself
+  // Build a human-readable summary of the active filter set for the print header
+  let filterLabel;
+  if (invState.nbrActive) {
+    filterLabel = 'Not Being Replenished';
+  } else {
+    const stockLabels = { oh: 'On Hand', transit: 'In Transit', oos: 'Out of Stock', low: 'Low Inventory' };
+    const tagLabels   = { staple: 'Staple', seasonal: 'Seasonal', newLaunch: 'New Launch' };
+    const parts = [];
+    [...invState.stockStatusSet].forEach(k => parts.push(stockLabels[k] || k));
+    [...invState.tagSet].forEach(k => parts.push(tagLabels[k] || k));
+    filterLabel = parts.length ? parts.join(', ') : 'All Products';
+  }
+  const catLabel    = invState.catFilter === 'all' ? 'All Categories' : invState.catFilter;
+  const searchLabel = invState.searchQ ? ' • Search: "' + invState.searchQ + '"' : '';
+
+  // Build table rows (parent-only — size detail not printed to keep it readable)
+  let rowsHtml = '';
+  filtered.forEach(p => {
+    const s = p.summary || {};
+    const oh = s.totalOH || 0;
+    const transit = s.totalInTransit || 0;
+    const sizesOH = s.sizesOnHand || '—';
+    const totalL30 = (p.sizes || []).reduce((sum, sz) => sum + (sz.l30 || 0), 0);
+    const totalL60 = (p.sizes || []).reduce((sum, sz) => sum + (sz.l60 || 0), 0);
+    const totalAvgWk = (p.sizes || []).reduce((sum, sz) => sum + (sz.avgWeeklySales || 0), 0);
+    const whAvail = (p.sizes || []).some(sz => sz.warehouseAvailable);
+    const onOrder = (p.sizes || []).some(sz => sz.onOrder);
+    let lastRestock = '';
+    (p.sizes || []).forEach(sz => {
+      if (sz.lastRestockDate && (!lastRestock || sz.lastRestockDate > lastRestock)) lastRestock = sz.lastRestockDate;
+    });
+    let tag = '—';
+    if (p.isNewLaunch) tag = 'NEW LAUNCH';
+    else if (p.isStaple) tag = 'STAPLE';
+    else if (p.isSeasonal) tag = 'SEASONAL';
+    const broken = invIsBrokenSizeRun(p) ? ' (BROKEN)' : '';
+    const storeOpt = invStoreOptionLabel(s.storeOption || '');
+
+    rowsHtml += '<tr>' +
+      '<td class="l">' + escapeHtml(p.productName || '') +
+        '<div class="sub">' + escapeHtml(p.productType || '') + '</div></td>' +
+      '<td class="c">' + oh + '</td>' +
+      '<td class="c">' + transit + '</td>' +
+      '<td class="c">' + escapeHtml(sizesOH) + escapeHtml(broken) + '</td>' +
+      '<td class="c">' + tag + '</td>' +
+      '<td class="c">' + escapeHtml(lastRestock || '—') + '</td>' +
+      '<td class="c">' + (whAvail ? 'Y' : 'N') + '</td>' +
+      '<td class="c">' + (onOrder ? 'Y' : 'N') + '</td>' +
+      '<td class="c">' + totalL30 + '</td>' +
+      '<td class="c">' + totalL60 + '</td>' +
+      '<td class="c">' + (totalAvgWk > 0 ? (totalAvgWk % 1 === 0 ? totalAvgWk : totalAvgWk.toFixed(1)) : '0') + '</td>' +
+      '<td class="c">' + escapeHtml(storeOpt || '—') + '</td>' +
+    '</tr>';
+  });
+
+  // Open a popup window and write the print-ready document
+  const printWin = window.open('', '_blank', 'width=1100,height=800');
+  if (!printWin) { alert('Pop-up blocked — please allow pop-ups for this site and try again.'); return; }
+
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const storeLabel = activeStore || '';
+
+  printWin.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Inventory — ${escapeHtml(storeLabel)} — ${escapeHtml(today)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1d26; margin: 24px; }
+  h1 { font-size: 16px; margin: 0 0 4px 0; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }
+  .meta { font-size: 11px; color: #555; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  thead th { background: #1a1d26; color: white; text-align: center; padding: 6px 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+  thead th.l { text-align: left; }
+  tbody td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tbody td.l { text-align: left; }
+  tbody td.c { text-align: center; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  .sub { font-size: 8.5px; color: #666; margin-top: 1px; }
+  @page { size: landscape; margin: 0.4in; }
+  @media print { body { margin: 0; } .no-print { display: none; } }
+</style></head><body>
+<h1>Inventory Overview — ${escapeHtml(storeLabel)}</h1>
+<div class="meta">Printed ${escapeHtml(today)} • Filter: ${escapeHtml(filterLabel)} • Category: ${escapeHtml(catLabel)}${escapeHtml(searchLabel)} • ${filtered.length} products</div>
+<table>
+  <thead>
+    <tr>
+      <th class="l">Product</th>
+      <th>On-Hand</th>
+      <th>In Transit</th>
+      <th>Sizes Avail</th>
+      <th>Tag</th>
+      <th>Last Restock</th>
+      <th>WH Avail</th>
+      <th>On Order</th>
+      <th>L30</th>
+      <th>L60</th>
+      <th>Avg Wk</th>
+      <th>Also Available At</th>
+    </tr>
+  </thead>
+  <tbody>${rowsHtml}</tbody>
+</table>
+<scr` + `ipt>window.onload = function () { setTimeout(function () { window.print(); }, 200); };</scr` + `ipt>
+</body></html>`);
+  printWin.document.close();
+}
+
+/**
+ * CSV export — mirrors the Purge CSV style (semicolon-safe, BOM for Excel).
+ * Honors the current filter: category, search, and pill all narrow the export
+ * to what the user is actually looking at. Matches the table view.
+ */
+function exportInventoryCSV() {
+  // Sync search input before computing filter (in case the user typed but
+  // didn't tab out — input event has fired, but make sure invState is current)
+  const searchEl = document.getElementById('inv-search');
+  if (searchEl) invState.searchQ = (searchEl.value || '').toLowerCase().trim();
+
+  const filtered = invGetFilteredItems();
+  if (!filtered.length) { alert('No inventory data matches the current filter.'); return; }
+
+  const headers = [
+    'Parent Name','Product Type','Size',
+    'On-Hand Inventory','In Transit','Sizes Available','Broken Size Run',
+    'Last Restock Date',
+    'Inventory Available','Inventory On Order','ETA',
+    'Last 30 Days Sales','Last 60 Days Sales','Average Weekly Sales',
+    'Also Available At',
+    'Is Staple','Is New Launch','Is Seasonal'
+  ];
+  const rows = [headers];
+  filtered.forEach(p => {
+    const isStp = p.isStaple    ? 'Y' : 'N';
+    const isNew = p.isNewLaunch ? 'Y' : 'N';
+    const isSsn = p.isSeasonal  ? 'Y' : 'N';
+    const broken = invIsBrokenSizeRun(p) ? 'Y' : 'N';
+    // Compute parent-level last restock (most recent across sizes)
+    let parentLastRestock = '';
+    (p.sizes || []).forEach(sz => {
+      if (sz.lastRestockDate && (!parentLastRestock || sz.lastRestockDate > parentLastRestock)) {
+        parentLastRestock = sz.lastRestockDate;
+      }
+    });
+    const sizesAvail = (p.summary && p.summary.sizesOnHand) || '';
+    const storeOpt   = invStoreOptionLabel((p.summary && p.summary.storeOption) || '');
+    (p.sizes || []).forEach(sz => {
+      rows.push([
+        p.productName || '', p.productType || '', sz.size || '',
+        sz.oh || 0, sz.inTransit || 0, sizesAvail, broken,
+        parentLastRestock,
+        sz.warehouseAvailable ? 'Y' : 'N',
+        sz.onOrder ? 'Y' : 'N',
+        invFmtEta(sz.eta) || '',
+        sz.l30 || 0, sz.l60 || 0, sz.avgWeeklySales || 0,
+        storeOpt,
+        isStp, isNew, isSsn
+      ]);
+    });
+  });
+
+  const csv = '﻿' + rows.map(r => r.map(c => {
+    const s = String(c == null ? '' : c);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Inventory_Overview_' + (activeStore || 'store').replace(/[^a-zA-Z0-9]/g, '_') + '_' +
+               new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadStores();
+  // Enter key submits from either login field
+  ['login-store', 'login-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+  });
+});
+</script>
+</body>
+</html>
